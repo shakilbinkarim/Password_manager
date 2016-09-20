@@ -13,7 +13,7 @@ function createAccount (account) {
     }
 
     storage.setItemSync('accounts', accounts);
-
+    return account
 }
 
 function getAccount (accountName) {
@@ -28,15 +28,28 @@ function getAccount (accountName) {
         accounts.forEach(function(account) {
             if (account.name === accountName) {
                 matchedAccount = account;
-                break;
             }
         });
         if (typeof matchedAccount !== 'undefined') {
             console.log('Account Found......');
-            console.log(matchedAccount);
+            return matchedAccount;
         } else {
             console.log('Account not found :(');
         }
     }
-
 }
+
+/*createAccount({
+    name : 'Instagram',
+    username : 'grey@fairytail.com',
+    password : 'ieatIce'
+});
+createAccount({
+    name : 'LinkedIn',
+    username : 'erza@fairytail.com',
+    password : 'titania'
+});*/
+
+var fetchedAccount = getAccount('Instagram');
+
+console.log(fetchedAccount);
