@@ -83,7 +83,9 @@ if(command === 'create'
         });
 } else if (command === 'get' && typeof yargs.name !== 'undefined') {
     var fetchedAccount = getAccount(yargs.name);
-    console.log(fetchedAccount);
+    if (typeof fetchedAccount !== 'undefined') {
+        console.log(fetchedAccount);
+    }
 }
 
 /*createAccount({
