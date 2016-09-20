@@ -3,6 +3,39 @@ console.log('Starting password manager....');
 var storage = require('node-persist');
 storage.initSync();
 
+var yargs = require('yargs')
+    .command('create', 'Create a new account', function (yargs) {
+        yargs.options({
+            name : {
+                demand : true,
+                alias : 'n',
+                type : 'string'
+            }, 
+            username : {
+                demand : true,
+                alias : 'u',
+                type : 'string'
+            },
+            password : {
+                demand : true,
+                alias : 'p',
+                type : 'string'
+            }
+        });
+    })
+    .command('get', 'Get Account deltails for an account', function (yargs) {
+        yargs.options({
+            name : {
+                demand : true,
+                alias : 'n',
+                type : 'string'
+            }
+        });
+    })
+    .argv;
+
+var command = yargs._[0];
+
 function createAccount (account) {
     var accounts = storage.getItemSync('accounts');
 
@@ -39,6 +72,20 @@ function getAccount (accountName) {
     }
 }
 
+if(command === 'create' 
+    && typeof yargs.name !== 'undefined' 
+    && typeof yargs.username !== 'undefined'
+    && typeof yargs.password !== 'undefined'){
+        createAccount({
+            name : yargs.name,
+            username : yargs.username,
+            password : yargs.password
+        });
+} else if (command === 'get' && typeof yargs.name !== 'undefined') {
+    var fetchedAccount = getAccount(yargs.name);
+    console.log(fetchedAccount);
+}
+
 /*createAccount({
     name : 'Instagram',
     username : 'grey@fairytail.com',
@@ -48,8 +95,6 @@ createAccount({
     name : 'LinkedIn',
     username : 'erza@fairytail.com',
     password : 'titania'
-});*/
-
+});
 var fetchedAccount = getAccount('Instagram');
-
-console.log(fetchedAccount);
+console.log(fetchedAccount);*/
