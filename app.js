@@ -3,6 +3,8 @@ console.log('Starting password manager....');
 var storage = require('node-persist');
 storage.initSync();
 
+var crypto = require('crypto-js');
+
 var yargs = require('yargs')
     .command('create', 'Create a new account', function (yargs) {
         yargs.options({
@@ -20,6 +22,11 @@ var yargs = require('yargs')
                 demand : true,
                 alias : 'p',
                 type : 'string'
+            },
+            masterPassword : {
+                demand : true,
+                alias : 'm',
+                type : 'string'
             }
         });
     })
@@ -29,6 +36,11 @@ var yargs = require('yargs')
                 demand : true,
                 alias : 'n',
                 type : 'string'
+            },
+            masterPassword : {
+                demand : true,
+                alias : 'm',
+                type : 'string'
             }
         });
     })
@@ -36,40 +48,65 @@ var yargs = require('yargs')
 
 var command = yargs._[0];
 
-function createAccount (account) {
-    var accounts = storage.getItemSync('accounts');
-
-    if (typeof accounts === 'undefined') {
-        accounts = [];
-    } else {
-        accounts.push(account);
+function getAccounts (masterPassword) {
+    // use getItemSync to fetch accounts
+    var encryptedAccounts = storage.getItemSync('accounts');
+    
+    /**
+     * Setting the accounts to an empty array so that 
+     * if no accounts existed before, we return an empty array
+     */
+    var accounts = [];
+    
+    // decrypt
+    if (typeof encryptedAccounts !== 'undefined') {
+        var bytes = crypto.AES.decrypt(encryptedAccounts, masterPassword);
+        accounts = JSON.parse(bytes.toString(crypto.enc.Utf8));
     }
 
-    storage.setItemSync('accounts', accounts);
+    // return accounts array
+    return accounts;
+}
+
+function saveAccounts (accounts, masterPassword) {
+    // encrypt
+    var accountsJSON = JSON.stringify(accounts);
+    var encryptedAccounts = crypto.AES.encrypt(accountsJSON, masterPassword);
+    storage.setItemSync('accounts', encryptedAccounts.toString());
+    return accounts;
+}
+
+function createAccount (account, masterPassword) {
+    var accounts = getAccounts(masterPassword);
+
+    /**
+     * Checking typeof account is unnecessary
+     * as we get an empty array from 
+     * getAccounts(masterPassword) function
+     * if no previous accounts exist
+     */
+    accounts.push(account);
+    saveAccounts(accounts, masterPassword);
     return account
 }
 
-function getAccount (accountName) {
-    var accounts = storage.getItemSync('accounts');
+function getAccount (accountName, masterPassword) {
+    var accounts = getAccounts(masterPassword);
 
     var matchedAccount;
 
-    if (typeof accounts === 'undefined') {
-        accounts = [];
-        console.log('Account not found :(');
-    } else {
-        accounts.forEach(function(account) {
-            if (account.name === accountName) {
-                matchedAccount = account;
-            }
-        });
-        if (typeof matchedAccount !== 'undefined') {
-            console.log('Account Found......');
-            return matchedAccount;
-        } else {
-            console.log('Account not found :(');
+    accounts.forEach(function(account) {
+        if (account.name === accountName) {
+            matchedAccount = account;
         }
+    });
+    if (typeof matchedAccount !== 'undefined') {
+        console.log('Account Found......');
+        return matchedAccount;
+    } else {
+        console.log('Account not found :(');
     }
+    
 }
 
 if(command === 'create' 
@@ -80,9 +117,9 @@ if(command === 'create'
             name : yargs.name,
             username : yargs.username,
             password : yargs.password
-        });
+        }, yargs.masterPassword);
 } else if (command === 'get' && typeof yargs.name !== 'undefined') {
-    var fetchedAccount = getAccount(yargs.name);
+    var fetchedAccount = getAccount(yargs.name, yargs.masterPassword);
     if (typeof fetchedAccount !== 'undefined') {
         console.log(fetchedAccount);
     }
